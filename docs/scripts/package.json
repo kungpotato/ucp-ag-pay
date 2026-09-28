@@ -1,0 +1,13 @@
+{
+  "name": "ucp-ag-pay-docs-capture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Drives the real running app with headless Chrome to generate docs/media gifs and screenshots",
+  "type": "module",
+  "scripts": {
+    "capture": "node capture.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}
