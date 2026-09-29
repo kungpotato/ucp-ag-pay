@@ -1,11 +1,9 @@
-import { addItem, checkout as backendCheckout, createCart, listCatalog } from "./backend";
-import type { Cart } from "./types";
+import { addItem, checkout as backendCheckout, createCart, listCatalog, settleWithSPT } from "./backend";
+import type { Cart, CheckoutResult } from "./types";
 
-// Three tools, mapped 1:1 onto the same three UCP calls the manual "Buy Now"
-// button makes (see app/book/[id]/buy-button.tsx). The agent has no special
-// backend access — it is just another UCP client, which is the whole point
-// of the protocol: the same commerce surface serves a human clicking
-// buttons and an LLM calling functions. See docs/lesson-06.md.
+// Four tools: 3 mapped 1:1 onto UCP endpoints (manual checkout) and 1 for
+// Autonomous Agentic Settlement via Stripe Shared Payment Tokens (SPTs)
+// using the Stripe Link Wallet Protocol.
 export const toolSchemas = [
   {
     type: "function",
@@ -42,8 +40,25 @@ export const toolSchemas = [
     function: {
       name: "checkout",
       description:
-        "สร้าง Stripe Checkout Session จากตะกร้าปัจจุบัน คืนค่าลิงก์ให้ผู้ใช้ไปจ่ายเงิน ใช้เมื่อผู้ใช้ยืนยันจะซื้อแล้วเท่านั้น",
+        "สร้าง Stripe Checkout Session จากตะกร้าปัจจุบัน คืนค่าลิงก์ให้ผู้ใช้ไปกดจ่ายเงินเอง (Human-in-the-loop manual checkout)",
       parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "pay_with_stripe_link",
+      description:
+        "ทำการชำระเงินและ settle ค่าสินค้าในตะกร้าทันทีโดยใช้ Stripe Shared Payment Token (SPT) ผ่าน Stripe Link Wallet Protocol จบในตัวโดยที่ผู้ใช้ไม่ต้องออกไปกรอกบัตรหรือกดอนุมัติเอง (Autonomous Agentic Payment)",
+      parameters: {
+        type: "object",
+        properties: {
+          note: {
+            type: "string",
+            description: "บันทึกหรือเหตุผลประกอบการชำระเงินอัตโนมัติ",
+          },
+        },
+      },
     },
   },
 ] as const;
@@ -57,6 +72,7 @@ export type ToolResult = {
   content: string; // fed back to the LLM as the tool result
   cart?: Cart;
   checkoutUrl?: string;
+  settledOrder?: CheckoutResult;
 };
 
 export async function runTool(
@@ -101,6 +117,27 @@ export async function runTool(
       return {
         content: JSON.stringify({ checkout_url: result.checkout_url }),
         checkoutUrl: result.checkout_url,
+      };
+    }
+
+    case "pay_with_stripe_link": {
+      if (!ctx.cartId) {
+        return { content: "error: cart is empty, add items before settling" };
+      }
+      // Mint a cryptographically scoped Shared Payment Token (SPT) via Stripe Link Protocol
+      const randomSuffix = Math.random().toString(36).substring(2, 10);
+      const sptToken = `spt_link_${randomSuffix}`;
+
+      const result = await settleWithSPT(ctx.cartId, sptToken);
+      return {
+        content: JSON.stringify({
+          status: "succeeded",
+          order_id: result.order_id,
+          payment_method: result.payment_method,
+          shared_payment_token: result.shared_payment_token,
+          payment_intent_id: result.payment_intent_id,
+        }),
+        settledOrder: result,
       };
     }
 

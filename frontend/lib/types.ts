@@ -35,11 +35,25 @@ export type OrderStatus = "pending_payment" | "paid" | "failed";
 export type Order = {
   id: string;
   cart_id: string;
-  stripe_session_id: string;
+  stripe_session_id?: string;
+  stripe_payment_intent_id?: string;
+  payment_method?: "stripe_checkout" | "stripe_link_spt";
+  shared_payment_token?: string;
   status: OrderStatus;
   total: Money;
   created_at: string;
   updated_at: string;
+};
+
+export type CheckoutResult = {
+  order_id: string;
+  checkout_url?: string;
+  session_id?: string;
+  status?: string;
+  payment_method?: string;
+  shared_payment_token?: string;
+  payment_intent_id?: string;
+  total?: Money;
 };
 
 export function formatMoney(m: Money): string {

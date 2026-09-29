@@ -56,31 +56,48 @@ export default function AgentPage() {
     <div className="mx-auto max-w-2xl">
       <h1 className="text-2xl font-semibold">Shopping Agent</h1>
       <p className="mt-1 text-sm text-neutral-400">
-        Agent ตัวนี้เรียก UCP endpoint เดียวกับปุ่ม &ldquo;ซื้อเลย&rdquo; ในหน้าเว็บ ผ่านเครื่องมือ
-        search_catalog / add_to_cart / checkout
+        Agent ตัวนี้เชื่อมต่อกับ UCP API เพื่อค้นหาและจัดการตะกร้าสินค้า พร้อมรองรับทั้ง Manual Checkout และ 
+        <strong className="text-emerald-400 font-medium"> Autonomous Agentic Settlement</strong> ด้วย Stripe Shared Payment Tokens (SPT)
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+        <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-950/40 px-3 py-1 font-medium text-emerald-300">
+          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          Stripe Link Agent Wallet Protocol (SPT Active · Mandate Limit: ฿2,500/tx)
+        </span>
         {backendUsed && (
-          <span className="ml-2 rounded bg-neutral-800 px-2 py-0.5 text-xs text-neutral-400">
+          <span className="rounded-full bg-neutral-800 px-2.5 py-1 text-neutral-400 border border-neutral-700">
             engine: {backendUsed}
           </span>
         )}
-      </p>
+      </div>
 
       <div
         ref={scrollRef}
         className="mt-6 flex h-[420px] flex-col gap-3 overflow-y-auto rounded-lg border border-neutral-800 bg-neutral-900/40 p-4"
       >
-        {turns.map((t, i) => (
-          <div
-            key={i}
-            className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-              t.role === "user"
-                ? "self-end bg-emerald-600 text-white"
-                : "self-start bg-neutral-800 text-neutral-100"
-            }`}
-          >
-            {t.content}
-          </div>
-        ))}
+        {turns.map((t, i) => {
+          const isSPT = t.content.includes("Shared Payment Token") || t.content.includes("spt_link_");
+          return (
+            <div
+              key={i}
+              className={`max-w-[85%] rounded-lg px-3.5 py-2.5 text-sm whitespace-pre-wrap ${
+                t.role === "user"
+                  ? "self-end bg-emerald-600 text-white"
+                  : isSPT
+                  ? "self-start border border-emerald-500/50 bg-neutral-900/90 text-neutral-100 shadow-lg shadow-emerald-950/30"
+                  : "self-start bg-neutral-800 text-neutral-100"
+              }`}
+            >
+              {isSPT && (
+                <div className="mb-2 flex items-center gap-1.5 border-b border-emerald-800/60 pb-1.5 text-xs font-semibold text-emerald-400">
+                  <span>⚡ Stripe Link Wallet · Autonomous Settlement</span>
+                </div>
+              )}
+              {t.content}
+            </div>
+          );
+        })}
         {loading && <div className="self-start text-xs text-neutral-500">กำลังคิด...</div>}
       </div>
 
@@ -89,7 +106,7 @@ export default function AgentPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
-          placeholder='ลองพิมพ์ "ซื้อ Settlement Layers" แล้วพิมพ์ "ยืนยัน"'
+          placeholder='ลองพิมพ์ "ซื้อ Settlement Layers แล้วตัดเงินผ่าน Stripe Link ให้ด้วย"'
           className="flex-1 rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm outline-none focus:border-emerald-500"
         />
         <button

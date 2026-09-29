@@ -1,4 +1,4 @@
-import type { Cart, Order, Product } from "./types";
+import type { Cart, CheckoutResult, Order, Product } from "./types";
 
 // The Go backend's CORS policy is wide open (see backend/main.go), so this
 // same client works unmodified from a Server Component (Node fetch), a
@@ -70,6 +70,24 @@ export async function checkout(
     },
   );
   return asJSON(res);
+}
+
+export async function settleWithSPT(
+  cartId: string,
+  sharedPaymentToken?: string,
+): Promise<CheckoutResult> {
+  const res = await fetch(
+    new URL(`/ucp/cart/${cartId}/checkout`, BACKEND_URL),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        shared_payment_token: sharedPaymentToken,
+        wallet_type: "stripe_link",
+      }),
+    },
+  );
+  return asJSON<CheckoutResult>(res);
 }
 
 export async function getOrder(id: string): Promise<Order> {

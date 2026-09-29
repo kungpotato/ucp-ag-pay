@@ -174,6 +174,14 @@ async function main() {
   await sleep(300);
   await shot(page, "agent-checkout-link");
 
+  // --- Lesson 09: autonomous settlement (Stripe Link + SPT) ---------------
+  await page.goto("http://localhost:3000/agent", { waitUntil: "networkidle0" });
+  await shot(page, "lesson09-empty");
+
+  await typeAndSend(page, "ซื้อ Settlement Layers แล้วตัดเงินผ่าน Stripe Link ให้ด้วย");
+  await sleep(1000);
+  await shot(page, "lesson09-spt-settled");
+
   await browser.close();
   console.log("done. frames in", FRAMES_DIR);
 }

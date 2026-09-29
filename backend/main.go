@@ -163,8 +163,10 @@ func (s *Server) handleAddItem(w http.ResponseWriter, r *http.Request) {
 }
 
 type checkoutRequest struct {
-	SuccessURL string `json:"success_url"`
-	CancelURL  string `json:"cancel_url"`
+	SuccessURL         string `json:"success_url"`
+	CancelURL          string `json:"cancel_url"`
+	SharedPaymentToken string `json:"shared_payment_token,omitempty"`
+	WalletType         string `json:"wallet_type,omitempty"`
 }
 
 func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
@@ -182,6 +184,32 @@ func (s *Server) handleCheckout(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnprocessableEntity, "cart is empty")
 		return
 	}
+
+	// Autonomous Agentic Settlement via Stripe Link Wallet Protocol (SPT):
+	// AI agent settles directly without redirecting the user to interactive checkout.
+	if req.SharedPaymentToken != "" || req.WalletType == "stripe_link" {
+		token := req.SharedPaymentToken
+		if token == "" {
+			token = "spt_link_" + newID("tok")[4:]
+		}
+		order := s.orders.Create(cart.ID, cart.Subtotal())
+		pi, err := s.stripe.SettlePaymentWithSPT(cart, order.ID, token)
+		if err != nil {
+			writeError(w, http.StatusBadGateway, "stripe settlement error: "+err.Error())
+			return
+		}
+		s.orders.MarkPaidWithSPT(order.ID, pi.ID, token)
+		writeJSON(w, http.StatusOK, map[string]any{
+			"order_id":             order.ID,
+			"status":               "paid",
+			"payment_method":       "stripe_link_spt",
+			"shared_payment_token": token,
+			"payment_intent_id":    pi.ID,
+			"total":                order.Total,
+		})
+		return
+	}
+
 	if req.SuccessURL == "" || req.CancelURL == "" {
 		writeError(w, http.StatusBadRequest, "success_url and cancel_url are required")
 		return

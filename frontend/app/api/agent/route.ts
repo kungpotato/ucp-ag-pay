@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
       reply: result.reply,
       cart_id: ctx.cartId,
       checkout_url: result.checkoutUrl ?? null,
+      settled_order: result.settledOrder ?? null,
       backend: usingLLM ? "openrouter-gemini" : "rule-based-fallback",
     });
   } catch (err) {

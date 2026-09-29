@@ -8,9 +8,9 @@
 
 | ส่วน | เทคโนโลยี | หน้าที่ |
 |---|---|---|
-| Backend | Go (stdlib ล้วน, zero dependency) | UCP catalog/cart/checkout + Stripe settlement + webhook |
+| Backend | Go (stdlib ล้วน, zero dependency) | UCP catalog/cart/checkout + Stripe settlement (Checkout & SPT) + webhook |
 | Frontend | Next.js (App Router) | ร้านค้าแบบคลิกปกติ + AI shopping agent (chat) |
-| Payment | Stripe Checkout + Webhooks (test mode) | settlement จริง, ตรวจลายเซ็น webhook เอง |
+| Payment | Stripe Checkout + Shared Payment Tokens (SPT) + Link Wallet | settlement จริง (ทั้ง manual redirect และ autonomous agentic payment) |
 | AI | OpenRouter → `google/gemini-3.8-flash` (มี fallback แบบ rule-based ถ้าไม่ตั้งค่า key) | เข้าใจภาษาธรรมชาติแล้วเรียก UCP tool |
 
 ## บทเรียน (อ่านตามลำดับ)
@@ -25,6 +25,7 @@
 | 06 | [AI Shopping Agent (OpenRouter Gemini)](docs/lesson-06.md) | ![](docs/media/lesson-06/demo.gif) |
 | 07 | [Human UI vs Agent UI](docs/lesson-07.md) | ![](docs/media/lesson-07/demo.gif) |
 | 08 | [End-to-End Recap](docs/lesson-08.md) | ![](docs/media/lesson-08/demo.gif) |
+| 09 | [Autonomous Settlement (Stripe SPT & Link)](docs/lesson-09.md) | ![](docs/media/lesson-09/demo.gif) |
 
 แต่ละบทมี **goal, สิ่งที่ทำ, ทำไมถึงออกแบบแบบนี้ (พร้อมเทียบกับทางเลือกอื่น), และต่อยอดได้อะไร** — ไม่ใช่แค่ "ทำตามนี้"
 

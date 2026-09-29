@@ -19,13 +19,16 @@ const (
 // call itself, because the checkout call only proves a session was created,
 // not that money moved.
 type Order struct {
-	ID              string      `json:"id"`
-	CartID          string      `json:"cart_id"`
-	StripeSessionID string      `json:"stripe_session_id"`
-	Status          OrderStatus `json:"status"`
-	Total           Money       `json:"total"`
-	CreatedAt       time.Time   `json:"created_at"`
-	UpdatedAt       time.Time   `json:"updated_at"`
+	ID                  string      `json:"id"`
+	CartID              string      `json:"cart_id"`
+	StripeSessionID     string      `json:"stripe_session_id,omitempty"`
+	StripePaymentIntent string      `json:"stripe_payment_intent_id,omitempty"`
+	PaymentMethod       string      `json:"payment_method,omitempty"`
+	SharedPaymentToken  string      `json:"shared_payment_token,omitempty"`
+	Status              OrderStatus `json:"status"`
+	Total               Money       `json:"total"`
+	CreatedAt           time.Time   `json:"created_at"`
+	UpdatedAt           time.Time   `json:"updated_at"`
 }
 
 type OrderStore struct {
@@ -82,3 +85,19 @@ func (s *OrderStore) MarkBySessionID(sessionID string, status OrderStatus) (*Ord
 	o.UpdatedAt = time.Now()
 	return o, true
 }
+
+func (s *OrderStore) MarkPaidWithSPT(orderID, paymentIntentID, sptToken string) (*Order, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	o, ok := s.orders[orderID]
+	if !ok {
+		return nil, false
+	}
+	o.Status = OrderPaid
+	o.PaymentMethod = "stripe_link_spt"
+	o.StripePaymentIntent = paymentIntentID
+	o.SharedPaymentToken = sptToken
+	o.UpdatedAt = time.Now()
+	return o, true
+}
+
